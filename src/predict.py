@@ -8,7 +8,9 @@ from handlers.model_builder import Nima
 from handlers.data_generator import TestDataGenerator
 import time
 import numpy as np
+import random
 from inception_score import get_inception_score
+
 
 BASE_MODEL_NAME = "MobileNet"
 TECH_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/models/MobileNet/weights_mobilenet_technical_0.11.hdf5"
@@ -117,13 +119,28 @@ def main(image_source):
         img_path = os.path.join(image_source, sample["image_id"]) + ".jpg"
         image_paths.append(img_path)
 
+    # Inception Score Optimization
+    # Select a random subset of images + the highest scored one and calculate the IS
 
-    # IS
-    inception_score = get_inception_score(images_to_np(image_paths))
-    print(inception_score)
+    print("Best Image is %s" % image_paths[0])
 
-    print(json.dumps(best_samples, indent=2))
-    print(json.dumps(worst_samples, indent=2))
+    best_variety = []
+    inception_score = 0
+    for i in range(5):
+        random_selected_images = random.sample(image_paths, 5)
+        if image_paths[0] not in random_selected_images:
+            del random_selected_images[-1]
+            random_selected_images.append(image_paths[0])
+            
+        _is, _ = get_inception_score(images_to_np(random_selected_images))
+        print(_is)
+        if _is > inception_score:
+            best_variety = random_selected_images
+            inception_score = _is
+    print("Best Inception Score is %f" % inception_score)
+
+    print(json.dumps(best_variety, indent=2))
+    # print(json.dumps(worst_samples, indent=2))
 
     print ("time: %fs" % (time.time() - start_time))
 

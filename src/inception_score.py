@@ -49,7 +49,7 @@ def preds2score(preds, splits=10):
         scores.append(np.exp(kl))
     return np.mean(scores), np.std(scores)
 
-def get_inception_score(images, splits=10):
+def get_inception_score(images, splits=1):
     assert(type(images) == np.ndarray)
     assert(len(images.shape) == 4)
     assert(images.shape[1] == 3)
