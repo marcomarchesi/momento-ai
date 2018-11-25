@@ -3,15 +3,23 @@ import os
 import glob
 import json
 import argparse
-from utils.utils import calc_mean_score, save_json
+from utils.utils import calc_mean_score, save_json, load_image
 from handlers.model_builder import Nima
 from handlers.data_generator import TestDataGenerator
 import time
+import numpy as np
+from inception_score import get_inception_score
 
 BASE_MODEL_NAME = "MobileNet"
 TECH_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/models/MobileNet/weights_mobilenet_technical_0.11.hdf5"
 AESTHETIC_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/models/MobileNet/weights_mobilenet_aesthetic_0.07.hdf5"
 
+# weights for aesthetic and technical analysis
+AW = 0.5
+TW = 1 - AW
+
+# A smaller BATCH_SIZE reduces GPU memory usage, but at the cost of a slight slowdown
+IS_IMAGE_SIZE = 224
 
 def image_file_to_json(img_path):
     img_dir = os.path.dirname(img_path)
@@ -19,17 +27,33 @@ def image_file_to_json(img_path):
 
     return img_dir, [{'image_id': img_id}]
 
-
-def image_dir_to_json(img_dir, img_type='jpg'):
-    img_paths = glob.glob(os.path.join(img_dir, '*.'+img_type))
+def image_dir_to_json(img_dir, img_type='jpg', img_size=IS_IMAGE_SIZE):
+    img_paths = glob.glob(os.path.join(img_dir, '*.'+ img_type))
 
     samples = []
+    
     for img_path in img_paths:
         img_id = os.path.basename(img_path).split('.')[0]
         samples.append({'image_id': img_id})
 
     return samples
 
+def images_to_np(images, img_type='jpg', img_size=IS_IMAGE_SIZE):
+    np_images = np.empty((len(images), 3, img_size, img_size), dtype=np.uint8)
+    for i, img_path in enumerate(images):
+        img = load_image(img_path, (img_size,img_size))
+        img = np.reshape(img, (3,img_size,img_size))
+        np_images[i] = img
+    return np_images
+    
+
+def select_images(img_dir, samples, fraction=3):
+    # select the best images:
+    n = len(samples) // fraction
+    if n > 20:
+        n = 20
+    
+    return samples[:n], samples[-5:]
 
 def predict(model, data_generator):
     return model.predict_generator(data_generator, workers=8, use_multiprocessing=True, verbose=1)
@@ -41,9 +65,6 @@ def main(image_source):
 
     img_format = 'jpg'
     
-    # weights for aesthetic and technical analysis
-    aw = 0.8
-    tw = 1 - aw
 
     # load samples
     if os.path.isfile(image_source):
@@ -52,36 +73,57 @@ def main(image_source):
         image_dir = image_source
         samples = image_dir_to_json(image_dir, img_type=img_format)
 
+
     # build model and load weights
     nima = Nima(BASE_MODEL_NAME, weights=None)
     nima.build()
 
+
+    # initialize data generator
+    data_generator = TestDataGenerator(samples, image_dir, 64, 10, nima.preprocessing_function(),
+                                       img_format=img_format)
+
     # aesthetic analysis
     weights_file = AESTHETIC_WEIGHTS_FILE
     nima.nima_model.load_weights(weights_file)
-    # initialize data generator
-    data_generator = TestDataGenerator(samples, image_dir, 64, 10, nima.preprocessing_function(),
-                                       img_format=img_format)
     # get predictions
     aesthetic_predictions = predict(nima.nima_model, data_generator)
-
     # technical analysis
     weights_file = TECH_WEIGHTS_FILE
     nima.nima_model.load_weights(weights_file)
-    # initialize data generator
-    data_generator = TestDataGenerator(samples, image_dir, 64, 10, nima.preprocessing_function(),
-                                       img_format=img_format)
     # get predictions
     technical_predictions = predict(nima.nima_model, data_generator)
+
+
+    max_t = 0
+    max_a = 0
     # calc mean scores and add to samples
     for i, sample in enumerate(samples):
         sample['aesthetic'] = calc_mean_score(aesthetic_predictions[i])
+        max_a = max(sample['aesthetic'], max_a)
         sample['technical'] = calc_mean_score(technical_predictions[i])
-        sample['aesthetic+technical'] = tw * calc_mean_score(technical_predictions[i]) + aw * calc_mean_score(aesthetic_predictions[i])
-
+        max_t = max(sample['technical'], max_t)
+    for sample in samples:
+        sample['aesthetic+technical'] = TW * (sample['technical'] / max_t) + AW * (sample['aesthetic'] / max_a)
     # order by total score
     sorted_samples = sorted(samples, key=lambda k:k['aesthetic+technical'], reverse=True)
-    print(json.dumps(sorted_samples, indent=2))
+
+
+    # select the best N images with the highest score
+    best_samples, worst_samples = select_images(image_source, sorted_samples)
+
+    image_paths = []
+    for sample in best_samples:
+        img_path = os.path.join(image_source, sample["image_id"]) + ".jpg"
+        image_paths.append(img_path)
+
+
+    # IS
+    inception_score = get_inception_score(images_to_np(image_paths))
+    print(inception_score)
+
+    print(json.dumps(best_samples, indent=2))
+    print(json.dumps(worst_samples, indent=2))
 
     print ("time: %fs" % (time.time() - start_time))
 

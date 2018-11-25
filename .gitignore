@@ -105,6 +105,8 @@ venv.bak/
 # End of https://www.gitignore.io/api/python
 
 # Custom
+frozen_inception_v1_2015_12_05.tar.gz
+src/tests/test_images*
 .DS_Store
 .idea/
 .pyre
