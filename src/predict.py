@@ -35,7 +35,9 @@ def image_dir_to_json(img_dir, img_type='jpg', img_size=IS_IMAGE_SIZE):
     samples = []
     
     for img_path in img_paths:
-        img_id = os.path.basename(img_path).split('.')[0]
+        # print(os.path.basename(img_path)[:-4])
+        # img_id = os.path.basename(img_path).split('.')[0]
+        img_id = os.path.basename(img_path)[:-4]
         samples.append({'image_id': img_id})
 
     return samples
@@ -96,6 +98,8 @@ def main(image_source):
     # get predictions
     technical_predictions = predict(nima.nima_model, data_generator)
 
+    print("Processing %i images" % len(samples))
+
 
     max_t = 0
     max_a = 0
@@ -122,7 +126,8 @@ def main(image_source):
     # Inception Score Optimization
     # Select a random subset of images + the highest scored one and calculate the IS
 
-    print("Best Image is %s" % image_paths[0])
+    print("Best Image is:")
+    print(json.dumps(best_samples[0], indent=2))
 
     best_variety = []
     inception_score = 0
@@ -133,16 +138,23 @@ def main(image_source):
             random_selected_images.append(image_paths[0])
             
         _is, _ = get_inception_score(images_to_np(random_selected_images))
-        print(_is)
+        # print(_is)
         if _is > inception_score:
             best_variety = random_selected_images
             inception_score = _is
-    print("Best Inception Score is %f" % inception_score)
+    # print("Best Inception Score is %f" % inception_score)
 
+    print("And the Best Variety is:")
     print(json.dumps(best_variety, indent=2))
-    # print(json.dumps(worst_samples, indent=2))
 
-    print ("time: %fs" % (time.time() - start_time))
+    print("Worst Images were:")
+    print(json.dumps(worst_samples[4], indent=2))
+    print(json.dumps(worst_samples[3], indent=2))
+    print(json.dumps(worst_samples[2], indent=2))
+    print(json.dumps(worst_samples[1], indent=2))
+    print(json.dumps(worst_samples[0], indent=2))
+
+    print ("Total Processing Time: %fs" % (time.time() - start_time))
 
 if __name__ == '__main__':
 
