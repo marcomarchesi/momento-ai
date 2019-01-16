@@ -19,6 +19,7 @@ AESTHETIC_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/models/MobileN
 # weights for aesthetic and technical analysis
 AW = 0.5
 TW = 1 - AW
+SELECTED_IMAGES = 20
 
 # A smaller BATCH_SIZE reduces GPU memory usage, but at the cost of a slight slowdown
 IS_IMAGE_SIZE = 224
@@ -54,8 +55,8 @@ def images_to_np(images, img_type='jpg', img_size=IS_IMAGE_SIZE):
 def select_images(img_dir, samples, fraction=3):
     # select the best images:
     n = len(samples) // fraction
-    if n > 20:
-        n = 20
+    if n > SELECTED_IMAGES:
+        n = SELECTED_IMAGES
     
     return samples[:n], samples[-5:]
 
@@ -82,7 +83,6 @@ def main(image_source):
     nima = Nima(BASE_MODEL_NAME, weights=None)
     nima.build()
 
-
     # initialize data generator
     data_generator = TestDataGenerator(samples, image_dir, 64, 10, nima.preprocessing_function(),
                                        img_format=img_format)
@@ -90,11 +90,15 @@ def main(image_source):
     # aesthetic analysis
     weights_file = AESTHETIC_WEIGHTS_FILE
     nima.nima_model.load_weights(weights_file)
+    nima.export("nima_aesthetic.h5")
+
+
     # get predictions
     aesthetic_predictions = predict(nima.nima_model, data_generator)
     # technical analysis
     weights_file = TECH_WEIGHTS_FILE
     nima.nima_model.load_weights(weights_file)
+    nima.export("nima_technical.h5")
     # get predictions
     technical_predictions = predict(nima.nima_model, data_generator)
 
@@ -123,16 +127,19 @@ def main(image_source):
         img_path = os.path.join(image_source, sample["image_id"]) + ".jpg"
         image_paths.append(img_path)
 
-    # Inception Score Optimization
-    # Select a random subset of images + the highest scored one and calculate the IS
-
     print("Best Image is:")
     print(json.dumps(best_samples[0], indent=2))
 
+    print ("Processing Time after Image Assessment: %fs" % (time.time() - start_time))
+
+    # Inception Score Optimization
+    # Select a random subset of images + the highest scored one and calculate the IS
+
     best_variety = []
     inception_score = 0
-    for i in range(5):
-        random_selected_images = random.sample(image_paths, 5)
+    variety_size = 5
+    for i in range(variety_size):
+        random_selected_images = random.sample(image_paths, variety_size)
         if image_paths[0] not in random_selected_images:
             del random_selected_images[-1]
             random_selected_images.append(image_paths[0])
@@ -159,9 +166,10 @@ def main(image_source):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-is', '--image-source', help='image directory or file', required=True)
+    parser.add_argument('-i', '--images', help='image directory or file', required=True)
+    parser.add_argument('-v', '--variety-size', type=int, help='number of images to select')
 
     args = parser.parse_args()
 
     # run
-    main(args.image_source)
+    main(args.images)

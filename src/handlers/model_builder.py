@@ -25,11 +25,12 @@ class Nima:
         elif self.base_model_name == 'InceptionResNetV2':
             self.base_module = importlib.import_module('keras.applications.inception_resnet_v2')
         else:
-            self.base_module = importlib.import_module('keras.applications.'+self.base_model_name.lower())
+            self.base_module = importlib.import_module('keras_applications.'+self.base_model_name.lower())
 
     def build(self):
         # get base model class
         BaseCnn = getattr(self.base_module, self.base_model_name)
+
 
         # load pre-trained model
         self.base_model = BaseCnn(input_shape=(224, 224, 3), weights=self.weights, include_top=False, pooling='avg')
@@ -42,6 +43,9 @@ class Nima:
 
     def compile(self):
         self.nima_model.compile(optimizer=Adam(lr=self.learning_rate, decay=self.decay), loss=self.loss)
+
+    def export(self, filepath):
+        self.nima_model.save(filepath)
 
     def preprocessing_function(self):
         return self.base_module.preprocess_input

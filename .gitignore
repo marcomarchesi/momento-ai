@@ -107,9 +107,12 @@ venv.bak/
 # Custom
 frozen_inception_v1_2015_12_05.tar.gz
 src/tests/test_images*
+src/tests/test*
 .DS_Store
 .idea/
 .pyre
 train_jobs
 _medium
 _readme/graphs.ipynb
+*.mlmodel
+*.h5
