@@ -116,3 +116,6 @@ _medium
 _readme/graphs.ipynb
 *.mlmodel
 *.h5
+transfer_learning_dataset_1/
+job/
+images/

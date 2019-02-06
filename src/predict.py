@@ -20,6 +20,7 @@ AESTHETIC_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/models/MobileN
 AW = 0.5
 TW = 1 - AW
 SELECTED_IMAGES = 20
+BEST_LIMIT = 7
 
 # A smaller BATCH_SIZE reduces GPU memory usage, but at the cost of a slight slowdown
 IS_IMAGE_SIZE = 224
@@ -52,11 +53,12 @@ def images_to_np(images, img_type='jpg', img_size=IS_IMAGE_SIZE):
     return np_images
     
 
-def select_images(img_dir, samples, fraction=3):
+def select_images(img_dir, samples, fraction=1):
     # select the best images:
-    n = len(samples) // fraction
-    if n > SELECTED_IMAGES:
-        n = SELECTED_IMAGES
+    # n = len(samples) // fraction
+    # if n > SELECTED_IMAGES:
+    #     n = SELECTED_IMAGES
+    n = BEST_LIMIT
     
     return samples[:n], samples[-5:]
 
@@ -129,6 +131,12 @@ def main(image_source):
 
     print("Best Image is:")
     print(json.dumps(best_samples[0], indent=2))
+    # print("and")
+    # print(json.dumps(best_samples[1], indent=2))
+    # print(json.dumps(best_samples[2], indent=2))
+    # print(json.dumps(best_samples[3], indent=2))
+    # print(json.dumps(best_samples[4], indent=2))
+
 
     print ("Processing Time after Image Assessment: %fs" % (time.time() - start_time))
 
@@ -149,7 +157,7 @@ def main(image_source):
         if _is > inception_score:
             best_variety = random_selected_images
             inception_score = _is
-    # print("Best Inception Score is %f" % inception_score)
+            print("New Inception Score is %f" % inception_score)
 
     print("And the Best Variety is:")
     print(json.dumps(best_variety, indent=2))

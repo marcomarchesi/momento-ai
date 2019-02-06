@@ -41,11 +41,13 @@ def get_inception_probs(inps):
     return preds
 
 def preds2score(preds, splits=10):
+    print("NEW SCORE")
     scores = []
     for i in range(splits):
-        part = preds[(i * preds.shape[0] // splits):((i + 1) * preds.shape[0] // splits), :]
-        kl = part * (np.log(part) - np.log(np.expand_dims(np.mean(part, 0), 0)))
-        kl = np.mean(np.sum(kl, 1))
+        part = preds[(i * preds.shape[0] // splits):((i + 1) * preds.shape[0] // splits), :]  # (5,1000)
+        # part = np.array([1.0,2.0,3.0,1.0,4.5,3.0,1.0,1.5,2.0,2.5])
+        kl = part * (np.log(part) - np.log(np.expand_dims(np.mean(part, 0), 0)))   # (5,1000)
+        kl = np.mean(np.sum(kl, 1)) #scalar value
         scores.append(np.exp(kl))
     return np.mean(scores), np.std(scores)
 
@@ -56,7 +58,9 @@ def get_inception_score(images, splits=1):
     assert(np.min(images[0]) >= 0 and np.max(images[0]) > 10), 'Image values should be in the range [0, 255]'
     # print('Calculating Inception Score with %i images in %i splits' % (images.shape[0], splits))
     start_time=time.time()
-    preds = get_inception_probs(images)
+    preds = get_inception_probs(images)  #each preds[i] has size=1000 (categories)  preds.shape=(5,1000)
+
+
     mean, std = preds2score(preds, splits)
     # print('Inception Score calculation time: %f s' % (time.time() - start_time))
     return mean, std  # Reference values: 11.34 for 49984 CIFAR-10 training set images, or mean=11.31, std=0.08 if in 10 splits.

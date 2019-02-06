@@ -36,6 +36,7 @@ def train(base_model_name,
     nima.build()
 
     if existing_weights is not None:
+        print("Loading weights...")
         nima.nima_model.load_weights(existing_weights)
 
     # split samples in train and validation set, and initialize data generators
@@ -67,11 +68,19 @@ def train(base_model_name,
                                          save_weights_only=True)
 
     # start training only dense layers
-    for layer in nima.base_model.layers:
+    # for layer in nima.base_model.layers:
+    #     layer.trainable = False
+    
+    # TRANSFER LEARNING
+    for layer in nima.nima_model.layers:
         layer.trainable = False
+    for layer in nima.nima_model.layers[-3:]:
+        layer.trainable = True
+
 
     nima.compile()
     nima.nima_model.summary()
+
 
     nima.nima_model.fit_generator(generator=training_generator,
                                   validation_data=validation_generator,
@@ -83,23 +92,23 @@ def train(base_model_name,
                                   callbacks=[tensorboard, model_checkpointer])
 
     # start training all layers
-    for layer in nima.base_model.layers:
-        layer.trainable = True
+    # for layer in nima.base_model.layers:
+    #     layer.trainable = True
 
-    nima.learning_rate = learning_rate_all
-    nima.decay = decay_all
-    nima.compile()
-    nima.nima_model.summary()
+    # nima.learning_rate = learning_rate_all
+    # nima.decay = decay_all
+    # nima.compile()
+    # nima.nima_model.summary()
 
-    nima.nima_model.fit_generator(generator=training_generator,
-                                  validation_data=validation_generator,
-                                  epochs=epochs_train_dense+epochs_train_all,
-                                  initial_epoch=epochs_train_dense,
-                                  verbose=1,
-                                  use_multiprocessing=multiprocessing_data_load,
-                                  workers=num_workers_data_load,
-                                  max_q_size=30,
-                                  callbacks=[tensorboard, model_checkpointer])
+    # nima.nima_model.fit_generator(generator=training_generator,
+    #                               validation_data=validation_generator,
+    #                               epochs=epochs_train_dense+epochs_train_all,
+    #                               initial_epoch=epochs_train_dense,
+    #                               verbose=1,
+    #                               use_multiprocessing=multiprocessing_data_load,
+    #                               workers=num_workers_data_load,
+    #                               max_q_size=30,
+    #                               callbacks=[tensorboard, model_checkpointer])
 
     K.clear_session()
 
