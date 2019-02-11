@@ -13,8 +13,11 @@ from inception_score import get_inception_score
 
 
 BASE_MODEL_NAME = "MobileNet"
-TECH_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/models/MobileNet/weights_mobilenet_technical_0.11.hdf5"
-AESTHETIC_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/models/MobileNet/weights_mobilenet_aesthetic_0.07.hdf5"
+# TECH_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/models/MobileNet/weights_mobilenet_technical_0.11.hdf5"
+# AESTHETIC_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/models/MobileNet/weights_mobilenet_aesthetic_0.07.hdf5"
+
+TECH_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/technical.hdf5"
+AESTHETIC_WEIGHTS_FILE = "/Users/marcomarchesi/Desktop/momento-ai/aesthetic.hdf5"
 
 # weights for aesthetic and technical analysis
 AW = 0.5
@@ -92,7 +95,7 @@ def main(image_source):
     # aesthetic analysis
     weights_file = AESTHETIC_WEIGHTS_FILE
     nima.nima_model.load_weights(weights_file)
-    nima.export("nima_aesthetic.h5")
+    nima.export("aesthetic.h5")
 
 
     # get predictions
@@ -100,7 +103,7 @@ def main(image_source):
     # technical analysis
     weights_file = TECH_WEIGHTS_FILE
     nima.nima_model.load_weights(weights_file)
-    nima.export("nima_technical.h5")
+    nima.export("technical.h5")
     # get predictions
     technical_predictions = predict(nima.nima_model, data_generator)
 
@@ -131,11 +134,11 @@ def main(image_source):
 
     print("Best Image is:")
     print(json.dumps(best_samples[0], indent=2))
-    # print("and")
-    # print(json.dumps(best_samples[1], indent=2))
-    # print(json.dumps(best_samples[2], indent=2))
-    # print(json.dumps(best_samples[3], indent=2))
-    # print(json.dumps(best_samples[4], indent=2))
+    print("and")
+    print(json.dumps(best_samples[1], indent=2))
+    print(json.dumps(best_samples[2], indent=2))
+    print(json.dumps(best_samples[3], indent=2))
+    print(json.dumps(best_samples[4], indent=2))
 
 
     print ("Processing Time after Image Assessment: %fs" % (time.time() - start_time))
@@ -145,9 +148,9 @@ def main(image_source):
 
     best_variety = []
     inception_score = 0
-    variety_size = 5
-    for i in range(variety_size):
-        random_selected_images = random.sample(image_paths, variety_size)
+    variety_loop_size = 5
+    for i in range(variety_loop_size):
+        random_selected_images = random.sample(image_paths, variety_loop_size)
         if image_paths[0] not in random_selected_images:
             del random_selected_images[-1]
             random_selected_images.append(image_paths[0])

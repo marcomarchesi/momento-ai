@@ -6,6 +6,7 @@ from tensorflow.python.ops import functional_ops
 tfgan = tf.contrib.gan
 import numpy as np
 import time
+from keras.applications.imagenet_utils import decode_predictions
 
 BATCH_SIZE = 1
 
@@ -37,15 +38,16 @@ def get_inception_probs(inps):
     for i in range(n_batches):
         inp = inps[i * BATCH_SIZE:(i + 1) * BATCH_SIZE] / 255. * 2 - 1
         preds[i * BATCH_SIZE:(i + 1) * BATCH_SIZE] = logits.eval({inception_images:inp})[:, :1000]
+        print(decode_predictions(preds, top=3))
     preds = np.exp(preds) / np.sum(np.exp(preds), 1, keepdims=True)
+    
     return preds
 
 def preds2score(preds, splits=10):
-    print("NEW SCORE")
+    # print("NEW SCORE")
     scores = []
     for i in range(splits):
         part = preds[(i * preds.shape[0] // splits):((i + 1) * preds.shape[0] // splits), :]  # (5,1000)
-        # part = np.array([1.0,2.0,3.0,1.0,4.5,3.0,1.0,1.5,2.0,2.5])
         kl = part * (np.log(part) - np.log(np.expand_dims(np.mean(part, 0), 0)))   # (5,1000)
         kl = np.mean(np.sum(kl, 1)) #scalar value
         scores.append(np.exp(kl))
@@ -59,6 +61,11 @@ def get_inception_score(images, splits=1):
     # print('Calculating Inception Score with %i images in %i splits' % (images.shape[0], splits))
     start_time=time.time()
     preds = get_inception_probs(images)  #each preds[i] has size=1000 (categories)  preds.shape=(5,1000)
+    print(preds)
+    print(images)
+    # for pred in preds:
+    #     pred = pred.tolist()
+    #     print(pred.index(max(pred)))
 
 
     mean, std = preds2score(preds, splits)

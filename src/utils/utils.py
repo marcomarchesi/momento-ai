@@ -36,6 +36,7 @@ def random_horizontal_flip(img):
 
 
 def load_image(img_file, target_size):
+#     print(img_file)
     return np.asarray(keras.preprocessing.image.load_img(img_file, target_size=target_size))
 
 

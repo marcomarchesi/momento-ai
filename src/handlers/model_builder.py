@@ -35,13 +35,14 @@ class Nima:
         # load pre-trained model
         self.base_model = BaseCnn(input_shape=(224, 224, 3), weights=self.weights, include_top=False, pooling='avg')
 
-        # Transfer Learning
-        self.truncated_model = self.base_model.get_layer("conv_pw_13_relu")
-        x = GlobalAveragePooling2D()(self.truncated_model.output)
+        x = Dropout(self.dropout_rate)(self.base_model.output)
 
-        # add dropout and dense layer
-        # x = Dropout(self.dropout_rate)(self.base_model.output)
-        x = Dropout(self.dropout_rate)(x)
+        # Transfer Learning
+        # self.truncated_model = self.base_model.get_layer("conv_pw_13_relu")
+        # x = GlobalAveragePooling2D()(self.truncated_model.output)
+        # x = Dropout(self.dropout_rate)(x)
+
+        
         x = Dense(units=self.n_classes, activation='softmax')(x)
 
         self.nima_model = Model(self.base_model.inputs, x)
